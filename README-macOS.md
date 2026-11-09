@@ -156,14 +156,23 @@ Windows 版が使っている `windows/lang/0411/*.lng` を、そのまま（変
   足した機能で、Windows 版の日本語版でも英語のままです）、ターミナルのリセット、クリップボードの二項目、
   「フォントの選択」の見出しなどです。
 
-`-DWITH_CONFIG_DUMP=ON` を付けると `cfgdump` という小さなツールも作れます。本物の設定画面を組み立てて、
-ツリー・タブ・項目に実際に載る文字列を標準出力に書き出すもので、画面を見ずに翻訳の抜けを数えられます。
-言語ファイルはプログラム名で選ばれるので、`putty` という名前で実行してください。
+翻訳の抜けを数える道具を三つ、入れてあります。
+
+| 道具 | 何をする |
+|---|---|
+| `tools/lang-coverage.py` | 言語ファイルの全項目を数えて、その文面が Unix 側のソースに実際に含まれるものか（含まれない＝Windows 専用の文面）に分けます。Font のページのキーが無かったのを見つけたのがこれです |
+| `tools/l10ntest.c` | 与えた文字列が言語ファイルでどう訳されるかを表示します。決まった検査一式を走らせる使い方と、stdin に一行ずつ渡す使い方 |
+| `cfgdump`（`-DWITH_CONFIG_DUMP=ON`） | 本物の設定ウィンドウを組み立てて、ツリー・タブ・項目・端末のメニューに載る文字列をすべて標準出力に出します |
+
+言語ファイルはプログラム名で選ばれるので、これらの道具には「どのプログラムの言語ファイルを使うか」を
+`PUTTY_PROGNAME` で教えます。
 
 ```sh
-cmake -S . -B build -DWITH_CONFIG_DUMP=ON && cmake --build build --target cfgdump
-mkdir -p /tmp/x && cp build/cfgdump /tmp/x/putty
-PUTTY_LANGDIR="$PWD/windows/lang" LANG=ja_JP.UTF-8 /tmp/x/putty > /tmp/dump.txt
+python3 tools/lang-coverage.py
+cmake -S . -B build -DWITH_CONFIG_DUMP=ON -DWITH_L10NTEST=ON
+cmake --build build --target cfgdump l10ntest
+PUTTY_PROGNAME=putty PUTTY_LANGDIR="$PWD/windows/lang" build/l10ntest
+PUTTY_PROGNAME=putty PUTTY_LANGDIR="$PWD/windows/lang" build/cfgdump > /tmp/dump.txt
 ```
 
 残っている英語は、保存したセッション名や「ANSI Red」のような色名、鍵交換のアルゴリズム名、制御文字の
@@ -351,8 +360,10 @@ sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 | ファイル | 内容 |
 | --- | --- |
 | `cmake/platforms/unix.cmake` | macOS（Darwin）で `OSX_GTK` を定義。これにより `NOT_X_WINDOWS`（Xlib 不要）、`SET_NONBLOCK_VIA_OPENPT`、`OSX_META_KEY_CONFIG`（メタキー設定）、`JUST_USE_GTK_CLIPBOARD_UTF8`（システム クリップボード利用）が有効になります。`PUTTY_DATADIR` の定義、`libiconv` の自動検出（macOS では `-liconv` が必要）も追加。 |
-| `unix/uxl10n.c` | 空だった Unix 版の言語サポートを実装。`.lng` の読み込み（UTF-16LE→UTF-8、`%XX` エスケープの復元、INI 形式のセクション、ハッシュテーブル）、ロケールからの言語選択、`CanonicalName` 参照、`get_l10n_setting()`（`_LINECODEPAGE_` など）まで、Windows 版 `winl10n.c` と同じ公開 API を提供。Finder 起動用に、環境変数が無い場合は macOS のユーザー設定（`AppleLanguages` / `AppleLocale`、アプリ単位の設定も）から言語を決めます。言語ファイルの名前はプログラム名から決めるので、`puttyapp` のような名前で呼ばれている場合や `puttygen-gtk` のように接尾辞が付いている場合は、元のプログラム名の言語ファイルも探しに行きます。追加として、Windows が接頭字の印しに使う `&` を取り除いたキーでも引けるようにし（表示時に「(&C)」も取り除く）、`l10n_menu_label()` でメニュー文言の対応（`Copy All` → `C&opy All to Clipboard` 之类）も引けるようにしました。 |
-| `unix/cfgdump.c` | （新規・既定では作りません）本物の設定ウィンドウを組み立てて、ツリー・タブ・項目に載る文字列を標準出力に出す確認用プログラム。`-DWITH_CONFIG_DUMP=ON` で作れます。翻訳の抜けを画面を見ずに数えるためのもので、言語ファイルはプログラム名で選ばれるため `putty` という名前で実行します。 |
+| `unix/uxl10n.c` | 空だった Unix 版の言語サポートを実装。`.lng` の読み込み（UTF-16LE→UTF-8、`%XX` エスケープの復元、INI 形式のセクション、ハッシュテーブル）、ロケールからの言語選択、`CanonicalName` 参照、`get_l10n_setting()`（`_LINECODEPAGE_` など）まで、Windows 版 `winl10n.c` と同じ公開 API を提供。Finder 起動用に、環境変数が無い場合は macOS のユーザー設定（`AppleLanguages` / `AppleLocale`、アプリ単位の設定も）から言語を決めます。言語ファイルの名前はプログラム名から決めるので、`puttyapp` のような名前で呼ばれている場合や `puttygen-gtk` のように接尾辞が付いている場合は、元のプログラム名の言語ファイルも探しに行きます。追加として、Windows が接頭字の印しに使う `&` を取り除いたキーでも引けるようにし（表示時に「(&C)」も取り除く）、`l10n_menu_label()` でメニュー文言の対応（`Copy All` → `C&opy All to Clipboard` 之类）も引けるようにしました。テスト用のプログラム（`tools/l10ntest.c` や `cfgdump`）は自分の名前に合った言語ファイルを持てないので、`PUTTY_PROGNAME` で「どのプログラムのふりをするか」を教えるようにしました。 |
+| `unix/cfgdump.c` | （新規・既定では作りません）本物の設定ウィンドウを組み立てて、ツリー・タブ・項目や端末メニューに載る文字列を標準出力に出す確認用プログラム。`-DWITH_CONFIG_DUMP=ON` で作れます。翻訳の抜けを画面を見ずに数えるためのものです。 |
+| `tools/l10ntest.c` | （新規・既定では作りません）文字列を言語ファイルに通すとどう出るかを表示する小さな検査プログラム。`-DWITH_L10NTEST=ON` |
+| `tools/lang-coverage.py` | （新規）言語ファイルの全項目を、Unix 側のソースに含まれるもの／Windows 専用のものに分類して数えます。翻訳漏れのキーを探すためのもの。 |
 | `config.c` | 各ページの見出し文で、プログラム名を埋めた後に辞書を引いていた箇所を `l10n_dupprintf()`（書式を先に翻訳する）に修正。 |
 | `stubs/nol10n.c` | 新しい `l10n_menu_label()` の空実装を追加（言語ファイルを使わないビルド用）。 |
 | `unix/macos-embed-deps.sh` | （新規）作った `.app` を自己完結させるスクリプト。`otool -L` で依存を辿って dylib を `Contents/Frameworks/` にコピーし参照を書き換え、gdk-pixbuf のローダとそのキャッシュ・GSettings のスキーマ・fontconfig の設定を `Contents/Resources/` に収めて `Info.plist` の `LSEnvironment` に書きます。コピーしたファイルの ad-hoc 署名まで行い、動かしたバンドルに実行し直すと記録した場所の書き直しだけ行います。 |

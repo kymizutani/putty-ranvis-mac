@@ -262,6 +262,15 @@ if(GTK_FOUND)
       ${GTK_LIBRARIES} ${X11_LIBRARIES} ${X11_Xrender_LIB})
   endif()
 
+  # tools/l10ntest.c: what does the language file make of this string?
+  # Enable with -DWITH_L10NTEST=ON, and run it as the program whose
+  # language file you want (PUTTY_PROGNAME=putty).
+  option(WITH_L10NTEST "Build the translation test program" OFF)
+  if(WITH_L10NTEST)
+    add_executable(l10ntest ${CMAKE_SOURCE_DIR}/tools/l10ntest.c)
+    target_link_libraries(l10ntest utils)
+  endif()
+
   add_executable(puttytel
     putty.c
     main-gtk-simple.c
