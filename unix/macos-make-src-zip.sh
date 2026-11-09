@@ -80,8 +80,8 @@ rm -f "$out"
 
 if ! $from_worktree && git -C "$tree" rev-parse --git-dir >/dev/null 2>&1; then
     # Everything the tag points at, and nothing that isn't committed.
-    git -C "$tree" archive --format=tar --prefix="$pkg/" "$commit" |
-        gzip > "$out"
+    git -C "$tree" archive --format=zip --prefix="$pkg/" \
+        -o "$out" "$commit"
     how="committed at $commit"
 else
     # No git to ask: collect the files, skipping what a build leaves
