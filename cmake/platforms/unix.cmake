@@ -102,6 +102,20 @@ else()
   set(NOT_X_WINDOWS ON)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  # macOS (including Apple Silicon machines) needs a number of
+  # workarounds in the front-end code, because its GTK does not speak
+  # X11 and its keyboard has a Command key. They are all enabled by
+  # this one define; see the comment at the top of unix/platform.h.
+  add_definitions(-DOSX_GTK)
+endif()
+
+# Where the language files for user-interface translation are
+# installed, as a last-resort place for the programs to look in. (They
+# prefer to find them near their own executables, which is what makes a
+# relocated installation work.)
+add_definitions(-DPUTTY_DATADIR="${CMAKE_INSTALL_FULL_DATADIR}/putty")
+
 include_directories(${CMAKE_SOURCE_DIR}/charset ${GTK_INCLUDE_DIRS} ${X11_INCLUDE_DIR})
 link_directories(${GTK_LIBRARY_DIRS})
 
@@ -116,6 +130,10 @@ endfunction()
 add_optional_system_lib(m pow)
 add_optional_system_lib(rt clock_gettime)
 add_optional_system_lib(xnet socket)
+# iconv() lives in the C library on some systems (glibc), and in a
+# separate library on others (macOS, where it's part of the system
+# libiconv). The ISO-2022 support in utils/iso2022.c needs it.
+add_optional_system_lib(iconv iconv_open)
 
 set(extra_dirs charset)
 
