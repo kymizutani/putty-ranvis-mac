@@ -4,6 +4,15 @@ project(putty LANGUAGES C)
 
 set(CMAKE_C_STANDARD 99)
 
+# When the source came from git, the commit id is worked out at build
+# time and the About box can say which source a binary was made from.
+# When it didn't - a source package, for instance - this is what goes
+# in that spot instead. Override with -DPORT_SOURCE_PROVENANCE=...
+if(NOT DEFINED PORT_SOURCE_PROVENANCE)
+  set(PORT_SOURCE_PROVENANCE
+      "not from a git checkout: built from the putty-ranvis 0.85 source package")
+endif()
+
 include(cmake/setup.cmake)
 
 # Scan the docs directory first, so that when we start calling

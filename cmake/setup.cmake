@@ -54,6 +54,7 @@ add_custom_target(check_git_commit
     -DGIT_EXECUTABLE=${GIT_EXECUTABLE}
     -DOUTPUT_FILE=${INTERMEDIATE_COMMIT_C}
     -DOUTPUT_TYPE=header
+    -DPORT_SOURCE_PROVENANCE=${PORT_SOURCE_PROVENANCE}
     -P ${CMAKE_SOURCE_DIR}/cmake/gitcommit.cmake
   DEPENDS ${CMAKE_SOURCE_DIR}/cmake/gitcommit.cmake
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}

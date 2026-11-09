@@ -1,6 +1,13 @@
 # Pure cmake script to write out cmake_commit.c and cmake_version.but
 
 set(DEFAULT_COMMIT "unavailable")
+# Somebody making a build from something that isn't a git checkout - a
+# released source package, for instance - can say what it _was_ made
+# from, and this is what the About box will report in the place where
+# a git commit id would otherwise go.
+if(DEFINED PORT_SOURCE_PROVENANCE AND NOT PORT_SOURCE_PROVENANCE STREQUAL "")
+  set(DEFAULT_COMMIT "${PORT_SOURCE_PROVENANCE}")
+endif()
 set(commit "${DEFAULT_COMMIT}")
 
 set(TOPLEVEL_SOURCE_DIR ${CMAKE_SOURCE_DIR})
