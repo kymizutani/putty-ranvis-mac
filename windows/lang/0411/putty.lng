@@ -860,3 +860,22 @@ ssh.com SSH-2 private key=ssh.com SSH-2 秘密鍵
 
 PPK format version %25u is lower than 2, the earliest version supported by this code=PPK 形式のバージョン %u は対応している最小バージョン 2 よりも古いものです
 PPK format version %25u is higher than 3, the latest version supported by this code=PPK 形式のバージョン %u は対応している最大バージョン 3 よりも新しいものです
+Choose the Meta key:=メタキーの選択:
+Option key acts as Meta=Optionキーをメタキーとして使う
+Command key acts as Meta=Commandキーをメタキーとして使う
+
+Options controlling font usage=フォントの使用に関する設定
+Font used for ordinary text=通常のテキストに使うフォント
+Font used for wide (CJK) text=全角テキストに使うフォント
+Fonts for displaying non-bold text=ボールドでないテキストを表示するフォント
+Font used for bolded text=ボールドにしたテキストに使うフォント
+Font used for bold wide text=ボールドにした全角テキストに使うフォント
+Use shadow bold instead of bold fonts=ボールドフォントの代わりに影付きボールドを使う
+(Note that bold fonts or shadow bolding are only used if you have not requested bolding to be done by changing the text colour.)=（ボールドフォントや影付きボールドは、ボールド化をテキストの色を変えることで行う設定にしていない場合にのみ使われます）
+Horizontal offset for shadow bold:=影付きボールドの水平方向のずれ:
+Fonts for displaying bolded text=ボールドにしたテキストを表示するフォント
+Reset Terminal=ターミナルをリセット
+Copy to system clipboard=クリップボードにコピー
+Paste from system clipboard=クリップボードから貼り付け
+
+Select a font=フォントの選択
