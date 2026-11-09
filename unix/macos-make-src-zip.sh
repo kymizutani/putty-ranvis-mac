@@ -91,7 +91,7 @@ else
     how="the files as they are"
 fi
 
-if ! unzip -t -qq "$out" >/dev/null 2>&1; then
+if ! unzip -t -q "$out" >/dev/null 2>&1; then
     echo "macos-make-src-zip.sh: the archive doesn't pass its own test" >&2
     exit 1
 fi
