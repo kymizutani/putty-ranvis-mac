@@ -15,6 +15,6 @@
  * putty-ranvis-0.85-macos-arm64-002.dmg is a build of 0.85-002.
  */
 
-#define TEXTVER "0.85-002"
-#define SSHVER "-ranvis-0.85-002"
-#define BINARY_VERSION 0,85,0,2
+#define TEXTVER "0.85-003"
+#define SSHVER "-ranvis-0.85-003"
+#define BINARY_VERSION 0,85,0,3
