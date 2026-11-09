@@ -51,6 +51,51 @@ cmake --install build --prefix /usr/local     # 任意のプレフィックス�
 X11 専用の `puttytel` は macOS ではビルドされません。
 設定の保存先は他の Unix 版と同じ `~/.putty/sessions` です。
 
+## ソースの git における置き方
+
+改造済みのソースは https://github.com/kymizutani/putty-ranvis-mac で管理しています。
+以下の Zip は git を使わない人のための物で、本体はこちらです。
+
+| 物 | 内容 |
+|---|---|
+| remote `origin` | この fork（kymizutani/putty-ranvis-mac） |
+| remote `ranvis` | Windows 版フォーク本体（ranvis/putty）。tag は fork に継承されないので、70 個ここから取ります |
+| branch `ranvis2` | Windows 版フォーク側の流れ。port の commit は載せず、そのまま mirror にしておきます |
+| branch `macos-port` | macOS への port。`ranvis-0.85` を base に、意味ごとに 12 commit |
+| tag `ranvis-0.85` | 受け取ったソース package と**1 バイト違わず一致する**地点（port の base） |
+| tag `macos-<版番>` | port の release。Windows 版側の tag は `ranvis-<ver>` 方式なので、`macos-` を付けて混線させません |
+
+```sh
+git clone https://github.com/kymizutani/putty-ranvis-mac.git
+cd putty-ranvis-mac
+git remote add ranvis https://github.com/ranvis/putty.git
+git fetch ranvis 'refs/tags/*:refs/tags/*'
+git switch macos-port
+cmake -S . -B build && cmake --build build -j8
+```
+
+git の中からビルドすると、About の「Source commit:」には実際のコミット ID が入ります
+（git でない場所からのビルドのときは、次の項の説明どおり別の文字が入ります）。
+
+Windows 版フォーク側が更新されたときは、base を進めてから port を載せ替えます。
+
+```sh
+git fetch ranvis
+git switch ranvis2 && git merge --ff-only ranvis/ranvis2
+git rebase --onto ranvis/ranvis2 ranvis-0.85 macos-port     # 古い base を明示
+```
+
+release を作るのは、tag を付けたところです。
+
+```sh
+git tag -a macos-0.85-003 -m "macOS port build 003"
+sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
+sh unix/macos-make-src-zip.sh
+git push origin macos-port --tags
+```
+
+`.dmg` と `.zip` は git に入れず（`build/` もろとも `.gitignore`）、tag に添えて配布します。
+
 ## 日本語表示
 
 Windows 版が使っている `windows/lang/0411/*.lng` を、そのまま（変換なしに）読み込みます。
@@ -180,7 +225,8 @@ About の窓（アプリメニュー → About）と `putty --version` には、
 出ます。`0.85-002` のように、ハイフンの後ろの三桁がこのポートのビルド番号で、配布する
 `.dmg` / `.zip` の名前の末尾に付ける数字と同じものです（`putty-ranvis-0.85-macos-arm64-002.dmg` は
 0.85-002 を固めたもの、という意味です）。`.app` が Finder で名乗るバージョン（「情報を見る」に出る
-やつ）も、同じ文字列を `version.h` から読み取って入れます。SSH の接続時に名乗る文字列は `SSHVER` で、
+やつ）も、同じ文字列を `version.h` から読み取って入れます。配布ファイルの名前も同じ文字列から
+組み立てます（`.app` と同じく、スクリプトが `version.h` を読みに行きます）。SSH の接続時に名乗る文字列は `SSHVER` で、
 `SSH-2.0-PuTTY-ranvis-0.85-002` のようになります。
 
 「Source commit:」という欄は、upstream の自動化されたビルドが **git のチェックアウトから**作ったときに、
@@ -265,9 +311,12 @@ Finder から起動したプログラムには環境変数がまったく渡さ�
 sh unix/macos-make-src-zip.sh
 ```
 
-`build/macos/putty-ranvis-0.85-macos-port-src-001.zip` のように、名前の末尾に 001, 002, … と
-連番が付きます（どれが新しく作ったものか分かるように、そして古い物を消さないように。`--seq 007` で
-指定もできます）。ビルド済みの物は含めません。
+名前は `version.h` の版番から組み立てます（`0.85-003` なら
+`build/macos/putty-ranvis-0.85-macos-port-src-003.zip`）。About に出る版番、`.app` のバージョン、
+tag、配布物名が全部同じ文字列から来るので、どれが新しく作ったものか名前で見分けられます。
+git の中から作るときは**コミット済みの内容**から作ります（`git archive` 経由。未コミットの変更や
+`build/` は入りません。`--commit <ref>` で任意の地点から作れます。git でない場所——Zip を展開した
+ような——ではファイルをそのまま集めます）。
 
 - 展開すると `putty-ranvis-0.85/` が現れます（732 個、12MB 程度、Zip で 2.9MB くらい）。
 - 中の `README-macOS.md` がこのファイルです。ビルドと `.app` / `.dmg` の作り方が書いてあります。
@@ -284,10 +333,9 @@ sh unix/macos-make-src-zip.sh
 sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 ```
 
-名前はこのツリーの名前とアーキテクチャから組み立てられ、末尾に 001, 002, … と連番が付きます
-（`build/macos/putty-ranvis-0.85-macos-arm64-002.dmg` のように）。どれが新しく作った物か分かるように、
-そして古い物を消さないようにするためです。`--seq` で明示的にも指定できますし、`--dry-run` は
-名前を表示するだけで作りません。
+名前はこのソースの版番とアーキテクチャから組み立てられ、`version.h` を読みに行きます
+（`0.85-003` → `build/macos/putty-ranvis-0.85-macos-arm64-003.dmg`）。版番を `--seq` で上書きも
+できますし、`--dry-run` は名前を表示するだけで作りません。古い物を消すことはしません。
 
 出来たイメージ（三つで 32MB くらい）の中に、`PuTTY.app` /
 `PTerm.app` / `PuTTYgen.app`、`/Applications` へのリンク（アイコンをそこに落とすとインストールされる、
@@ -310,8 +358,9 @@ sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 | `unix/macos-embed-deps.sh` | （新規）作った `.app` を自己完結させるスクリプト。`otool -L` で依存を辿って dylib を `Contents/Frameworks/` にコピーし参照を書き換え、gdk-pixbuf のローダとそのキャッシュ・GSettings のスキーマ・fontconfig の設定を `Contents/Resources/` に収めて `Info.plist` の `LSEnvironment` に書きます。コピーしたファイルの ad-hoc 署名まで行い、動かしたバンドルに実行し直すと記録した場所の書き直しだけ行います。 |
 | `unix/utils/macos_bundle_env.c` | （新規）`.app` の中で起動したときに、実行ファイルの実際の位置から同梱データ（gdk-pixbuf のローダキャッシュ、GSettings のスキーマ、fontconfig の設定）の場所を組み立てて環境変数に設定する。場所を移しても、ターミナルから起動しても動くようにするためのもので、`putty` / `pterm` / `puttyapp` / `ptermapp` / `puttygen-gtk` の起動処理から呼ばれます。 |
 | `unix/macos-make-dmg.sh` | （新規）三つの `.app` をまとめて配れる `.dmg` にするスクリプト。`/Applications` へのリンクとこの説明も入れます。入れる前に各アプリの署名を確認し、出来たイメージの検証とマウントまで行います。名前の末尾に 001, 002, … と連番を付けます（`--seq` で指定、`--dry-run` で名前だけ表示）。 |
-| `unix/macos-make-src-zip.sh` | （新規）改造済みソースを Zip にまとめるスクリプト。ビルド済み物は除き、作った後に `unzip -t` で検証します。同じ連番方式。 |
-| `unix/next-sequence-number.sh` | （新規）`<base>-001.<ext>` 形式のファイル名で、次に使う番号を探すだけの小さな補助スクリプト。 |
+| `unix/macos-make-src-zip.sh` | （新規）改造済みソースを Zip にまとめるスクリプト。git の中ならコミット済みの中身だけを集めます。作った後に `unzip -t` で検証します。名前と番号は `version.h` から。 |
+| `unix/release-name.sh` | （新規）`version.h` の版番から、配布物の名前（base・連番・展開後のトップ_DIR 名）を組み立てる補助スクリプト。About の版番とファイル名が離れないようにするためのもの。 |
+| `unix/next-sequence-number.sh` | （新規）同じ名前のファイルが並んでいるときに次の番号を探す補助スクリプト。版番が付いていないソース（upstream 之类）から作る場合の決め方として使います。 |
 | `version.h` | 既定だった「Unidentified build」を、このポートの版番（`0.85-002`）に差し替え。About の窓・`--version`・SSH の名乗り（`SSHVER`）・`.app` が名乗るバージョンは、すべてここから取ります。末尾の三桁が端口のビルド番号で、配布ファイル名の末尾の数字と同じです。 |
 | `CMakeLists.txt`, `cmake/setup.cmake`, `cmake/gitcommit.cmake` | git のチェックアウトではない場所からビルドしたときに、About の「Source commit:」へ何から作った品なのか書けるようにしました（既定はこの端口のソース-package である旨。git がある場所なら今までどおりコミット ID が出ます。`-DPORT_SOURCE_PROVENANCE=` で差し替え）。 |
 | `unix/make-macos-bundle.sh` | （新規）`.app` バンドルを組み立てるスクリプト。実行ファイル、Info.plist、`windows/*.ico` からの `.icns`、`Contents/Resources/lang` の言語ファイル、ad-hoc のコードサインまで行います。 |
