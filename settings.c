@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include "putty.h"
 #include "storage.h"
+#ifdef _WIN32
 #include "winwallp.h"
+#endif
 #ifndef NO_GSSAPI
 #include "ssh/gssc.h"
 #include "ssh/gss.h"

@@ -1300,6 +1300,20 @@ CONF_OPTION(winclass,
 
 /* end of original list */ \
 
+/*
+ * The options below this point were added by this modified version of
+ * the source, and several of them are only ever used by the Windows
+ * frontend. Their default values are written in terms of constants
+ * that come from the Windows headers, so on other platforms we supply
+ * stand-in definitions with the same numerical values here. (The
+ * Windows build uses the real definitions from wingdi.h / winwallp.h.)
+ */
+#ifndef _WIN32
+#define CW_USEDEFAULT 0
+#define WALLPAPER_ALIGN_DEFAULT 0
+#define WALLPAPER_PLACE_DEFAULT 3      /* WALLPAPER_PLACE_TILE_X | _TILE_Y */
+#endif /* !_WIN32 */
+
 CONF_OPTION(alt_metabit,
     VALUE_TYPE(BOOL),
     DEFAULT_BOOL(false),

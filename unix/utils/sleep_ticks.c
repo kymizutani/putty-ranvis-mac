@@ -1,5 +1,5 @@
 #include <unistd.h>
-#include "platform.h"
+#include "putty.h"
 
 void sleep_ticks(int ticks)
 {

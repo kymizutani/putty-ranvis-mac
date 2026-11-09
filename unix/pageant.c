@@ -21,6 +21,24 @@
 #include "misc.h"
 #include "pageant.h"
 
+/*
+ * The cross-platform agent code calls these two functions around each
+ * operation it performs, so that a front end with a user interface can
+ * react to the activity: the Windows one uses them to postpone its
+ * automatic re-encryption of idle keys until an operation has
+ * finished. Unix Pageant has no such background activity, so every
+ * request is accepted, and the notification is ignored.
+ */
+int accept_agent_request(int type, const RSAKey *rsaKey,
+                         const ssh2_userkey *ssh2UserKey)
+{
+    return 1;
+}
+
+void notify_agent_make_op(int type)
+{
+}
+
 void cmdline_error(const char *fmt, ...)
 {
     va_list ap;

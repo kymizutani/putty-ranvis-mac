@@ -1,5 +1,7 @@
 #include "putty.h"
+#ifdef _WIN32
 #include "windows/winwallp.h"
+#endif
 
 #define CONF_ENUM(name, ...)                                            \
     static const ConfSaveEnumValue conf_enum_values_##name[] = {        \

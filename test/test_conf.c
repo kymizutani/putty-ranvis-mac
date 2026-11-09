@@ -756,7 +756,8 @@ void test_simple(void)
     test_bool_simple(CONF_no_alt_screen, "NoAltScreen", false);
     test_bool_simple(CONF_no_remote_wintitle, "NoRemoteWinTitle", false);
     test_bool_simple(CONF_no_remote_clearscroll, "NoRemoteClearScroll", false);
-    test_bool_simple(CONF_no_dbackspace, "NoDBackspace", false);
+    /* this source tree makes no_dbackspace an integer, not a boolean */
+    test_int_simple(CONF_no_dbackspace, "NoDBackspace", 0);
     test_bool_simple(CONF_no_remote_charset, "NoRemoteCharset", false);
     /* note we have no test for CONF_remote_qtitle_action because no default */
     test_bool_simple(CONF_app_cursor, "ApplicationCursorKeys", false);
