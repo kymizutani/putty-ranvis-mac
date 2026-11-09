@@ -596,6 +596,7 @@ int main(int argc, char **argv)
 
     setlocale(LC_CTYPE, "");
     enable_dit();
+    setup_macos_bundle_environment();
 
     /* Call the function in ux{putty,pterm}.c to do app-type
      * specific setup */

@@ -22,6 +22,13 @@ add_sources_from_current_dir(utils
   utils/sleep_ticks.c
   utils/subprocess_waiter.c
   utils/x11_ignore_error.c
+  # Language-file support: every program built for this platform may
+  # translate its user-interface strings, so this lives in the library
+  # that everything links against.
+  uxl10n.c
+  # Finding the data files that were embedded in a macOS .app bundle,
+  # from wherever the program happens to have been started.
+  utils/macos_bundle_env.c
   # We want the ISO C implementation of ltime(), because we don't have
   # a local better alternative
   ../utils/ltime.c)
@@ -36,6 +43,11 @@ add_library(ptermxpms STATIC
   pterm-rgb.c
   pterm-config-xpm.c
   pterm-config-rgb.c)
+
+# Language files, used by uxl10n.c to translate the user interface.
+# These are the same files that the Windows build installs.
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/windows/lang/
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/putty/lang)
 add_sources_from_current_dir(eventloop
   cliloop.c uxsel.c)
 add_sources_from_current_dir(console
@@ -85,7 +97,7 @@ add_executable(psusan
   pty.c)
 be_list(psusan psusan)
 target_link_libraries(psusan
-  eventloop sshserver keygen settings network crypto utils)
+  eventloop sshserver keygen settings network crypto utils iso2022)
 installed_program(psusan)
 
 add_library(puttygen-common OBJECT
@@ -102,6 +114,27 @@ add_executable(puttygen
   $<TARGET_OBJECTS:puttygen-common>)
 target_link_libraries(puttygen keygen console crypto utils)
 installed_program(puttygen)
+
+if(GTK_FOUND)
+  # The window-based form of the key generator: same engine, Gtk front
+  # end. This is the program that goes inside PuTTYgen.app, because
+  # unlike the command-line one it's something you can double-click.
+  #
+  # It doesn't use the "puttygen-common" object library, because that
+  # includes the stubs that stand in for Gtk in a command-line program.
+  add_executable(puttygen-gtk
+    gtkgen.c
+    ${CMAKE_SOURCE_DIR}/stubs/no-timing.c
+    keygen-noise.c
+    noise.c
+    storage.c
+    ${CMAKE_SOURCE_DIR}/sshpubk.c
+    ${CMAKE_SOURCE_DIR}/sshrand.c)
+  target_link_libraries(puttygen-gtk
+    keygen crypto utils settings eventloop
+    ${GTK_LIBRARIES} ${platform_libraries})
+  installed_program(puttygen-gtk)
+endif()
 
 add_executable(cgtest
   ${CMAKE_SOURCE_DIR}/cgtest.c
@@ -133,7 +166,7 @@ add_executable(uppity
   ${CMAKE_SOURCE_DIR}/stubs/no-gss.c)
 be_list(uppity Uppity)
 target_link_libraries(uppity
-  eventloop sshserver keygen settings network crypto utils)
+  eventloop sshserver keygen settings network crypto utils iso2022)
 
 if(GTK_FOUND)
   add_sources_from_current_dir(utils
@@ -145,9 +178,12 @@ if(GTK_FOUND)
     utils/string_width.c
     columns.c)
   add_sources_from_current_dir(guiterminal
-    uxl10n.c
     window.c unifont.c dialog.c config-gtk.c gtk-common.c config-unix.c unicode.c printing.c)
   add_dependencies(guiterminal generated_licence_h) # dialog.c uses licence.h
+  # unix/unicode.c can invoke the ISO-2022 codec, which the build keeps
+  # in a library of its own, so everything that links the terminal
+  # widget has to be linked against it too.
+  target_link_libraries(guiterminal iso2022)
 
   add_executable(pterm
     pterm.c
@@ -207,6 +243,25 @@ if(GTK_FOUND)
       ${GTK_LIBRARIES} ${X11_LIBRARIES} ${X11_Xrender_LIB})
   endif()
 
+  # Not built by default, because it's a diagnostic rather than a
+  # program anybody wants: it builds the real configuration dialog and
+  # prints the strings it would put in its tree, its tabs and its
+  # controls, so that translation coverage can be checked without
+  # looking at a screen. Enable with -DWITH_CONFIG_DUMP=ON.
+  option(WITH_CONFIG_DUMP "Build the config-dialog text dump" OFF)
+  if(WITH_CONFIG_DUMP)
+    add_executable(cfgdump
+      cfgdump.c
+      putty.c
+      ${CMAKE_SOURCE_DIR}/stubs/no-cmdline.c
+      ${CMAKE_SOURCE_DIR}/stubs/no-console.c)
+    be_list(cfgdump PuTTY SSH SERIAL OTHERBACKENDS)
+    target_link_libraries(cfgdump
+      guiterminal eventloop sshclient otherbackends settings
+      network crypto utils puttyxpms
+      ${GTK_LIBRARIES} ${X11_LIBRARIES} ${X11_Xrender_LIB})
+  endif()
+
   add_executable(puttytel
     putty.c
     main-gtk-simple.c
@@ -226,8 +281,6 @@ if(GTK_FOUND)
   add_executable(test_lineedit
     ${CMAKE_SOURCE_DIR}/test/test_lineedit.c
     ${CMAKE_SOURCE_DIR}/stubs/no-gss.c
-    ${CMAKE_SOURCE_DIR}/stubs/no-logging.c
-    ${CMAKE_SOURCE_DIR}/stubs/no-printing.c
     ${CMAKE_SOURCE_DIR}/stubs/no-storage.c
     ${CMAKE_SOURCE_DIR}/stubs/no-timing.c)
   target_link_libraries(test_lineedit
@@ -266,3 +319,89 @@ target_link_libraries(pageant
 installed_program(pageant)
 
 add_sources_from_current_dir(test_conf unicode.c stubs/no-uxsel.c)
+target_link_libraries(test_conf iso2022)
+
+# ---------------------------------------------------------------------
+# macOS application bundles.
+#
+# These are built into the "macos" subdirectory of the build directory,
+# and are not installed, because their whole purpose is to be a
+# self-contained thing you can double-click in the Finder.
+#
+# They are not self-contained as far as GTK is concerned: the shared
+# libraries stay where they are in the system, so a bundle works for as
+# long as the GTK it was built against remains installed. What _is_
+# inside the bundle is the binary, the Info.plist, an application icon,
+# and the language files, which the programs look for inside
+# Contents/Resources/lang.
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+  # The language-selection code asks CoreFoundation for the user's
+  # locale, because a bundle launched by the Finder has no locale
+  # environment variables at all.
+  find_library(COREFOUNDATION_LIBRARY CoreFoundation)
+  if(COREFOUNDATION_LIBRARY)
+    target_link_libraries(utils ${COREFOUNDATION_LIBRARY})
+  endif()
+
+  # The first argument is the CMake target the binary is taken from, and
+  # the second is the name that binary gets inside the bundle - which is
+  # also the name used to look up its language file, so it must be the
+  # plain lower-case program name.
+  #
+  # The terminal front ends are bundled using their "…app" variants,
+  # i.e. the versions built on GtkApplication instead of plain
+  # gtk_init(). Upstream's own bundle specifications use those too;
+  # they're the ones that come to the foreground and get a real
+  # application menu when started from the Finder.
+  # The version a bundle says it is is the same version the About box
+  # says, so we read it out of the header that the About box reads
+  # instead of writing it down again here.
+  file(READ "${CMAKE_SOURCE_DIR}/version.h" version_h_contents)
+  string(REGEX MATCH "#define TEXTVER \"([^\"]*)\"" _ "${version_h_contents}")
+  set(port_version "${CMAKE_MATCH_1}")
+  if(NOT port_version)
+    set(port_version "0.85")
+  endif()
+
+  function(add_macos_bundle target prog name identifier icon)
+    add_custom_target(${name}-app ALL
+      COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/make-macos-bundle.sh
+        --app ${CMAKE_BINARY_DIR}/macos/${name}.app
+        --prog ${prog}
+        --binary $<TARGET_FILE:${target}>
+        --name ${name}
+        --identifier ${identifier}
+        --icon ${icon}
+        --lang ${CMAKE_SOURCE_DIR}/windows/lang
+        --version ${port_version}
+      DEPENDS ${target} ${CMAKE_CURRENT_SOURCE_DIR}/make-macos-bundle.sh
+              ${CMAKE_CURRENT_SOURCE_DIR}/macos-embed-deps.sh
+      COMMENT "Building macOS application bundle ${name}.app")
+
+    # make-macos-bundle.sh starts by deleting the bundle it's been told
+    # to build, so by the time this runs the bundle always contains
+    # nothing but what was just assembled. Copying in the libraries the
+    # program links against is a separate step so that the bundles can
+    # also be made self-contained after the fact, by running the second
+    # script by hand.
+    add_custom_command(TARGET ${name}-app POST_BUILD
+      COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/macos-embed-deps.sh
+        --app ${CMAKE_BINARY_DIR}/macos/${name}.app
+      COMMENT "Embedding shared libraries in ${name}.app")
+  endfunction()
+
+  add_macos_bundle(puttyapp putty    PuTTY
+                   org.tartarus.projects.putty.macputty
+                   ${CMAKE_SOURCE_DIR}/windows/putty.ico)
+  add_macos_bundle(ptermapp pterm    PTerm
+                   org.tartarus.projects.putty.macpterm
+                   ${CMAKE_SOURCE_DIR}/windows/pterm.ico)
+  add_macos_bundle(puttygen-gtk puttygen PuTTYgen
+                   org.tartarus.projects.putty.macputtygen
+                   ${CMAKE_SOURCE_DIR}/windows/puttygen.ico)
+  # Pageant deliberately isn't bundled. It's a background agent
+  # process with no window of its own, and the Mac has no system tray
+  # in which to show one, so double-clicking it would appear to do
+  # nothing at all. Use the command-line pageant if you need it.
+endif()
