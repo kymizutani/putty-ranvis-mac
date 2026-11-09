@@ -354,16 +354,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   # gtk_init(). Upstream's own bundle specifications use those too;
   # they're the ones that come to the foreground and get a real
   # application menu when started from the Finder.
-  # The version a bundle says it is is the same version the About box
-  # says, so we read it out of the header that the About box reads
-  # instead of writing it down again here.
-  file(READ "${CMAKE_SOURCE_DIR}/version.h" version_h_contents)
-  string(REGEX MATCH "#define TEXTVER \"([^\"]*)\"" _ "${version_h_contents}")
-  set(port_version "${CMAKE_MATCH_1}")
-  if(NOT port_version)
-    set(port_version "0.85")
-  endif()
-
   function(add_macos_bundle target prog name identifier icon)
     add_custom_target(${name}-app ALL
       COMMAND /bin/sh ${CMAKE_CURRENT_SOURCE_DIR}/make-macos-bundle.sh
@@ -374,8 +364,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         --identifier ${identifier}
         --icon ${icon}
         --lang ${CMAKE_SOURCE_DIR}/windows/lang
-        --version ${port_version}
-      DEPENDS ${target} ${CMAKE_CURRENT_SOURCE_DIR}/make-macos-bundle.sh
+        --version-from ${CMAKE_SOURCE_DIR}/version.h
+      DEPENDS ${target} ${CMAKE_SOURCE_DIR}/version.h
+              ${CMAKE_CURRENT_SOURCE_DIR}/make-macos-bundle.sh
               ${CMAKE_CURRENT_SOURCE_DIR}/macos-embed-deps.sh
       COMMENT "Building macOS application bundle ${name}.app")
 

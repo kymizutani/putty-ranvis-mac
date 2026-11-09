@@ -14,7 +14,7 @@
 # Usage:
 #   make-macos-bundle.sh --app APP.app --prog PROG --binary BINARY \
 #       --name NAME --identifier ID --lang LANGDIR \
-#       [--icon ICONFILE] [--version VERSION]
+#       [--icon ICONFILE] [--version VERSION] [--version-from FILE]
 #
 # PROG is the name the program will have inside the bundle, and is also
 # the name used to look up its language file, so it should be the
@@ -34,6 +34,17 @@ while [ $# -gt 0 ]; do
         --lang)       langdir=$2;   shift 2 ;;
         --icon)       icon=$2;      shift 2 ;;
         --version)    version=$2;   shift 2 ;;
+        --version-from)
+            # Read the version out of the header the About box reads, at
+            # the time the bundle is made, so that the version can't be
+            # current in one place and stale in another.
+            version=$(sed -n 's/^#define TEXTVER "\([^"]*\)".*/\1/p' "$2" |
+                      head -1)
+            if [ -z "$version" ]; then
+                echo "make-macos-bundle.sh: no TEXTVER in $2" >&2
+                exit 1
+            fi
+            shift 2 ;;
         *) echo "make-macos-bundle.sh: unrecognised argument '$1'" >&2
            exit 2 ;;
     esac
