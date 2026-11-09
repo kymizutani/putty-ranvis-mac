@@ -1040,6 +1040,66 @@ static int return_key(GtkFrontend *inst, char *output, bool *special)
     return end;
 }
 
+#ifdef OSX_META_KEY_CONFIG
+/*
+ * On OS X and macOS, copy and paste are expected to be on the Command
+ * key, as in every other application on the system. GTK reports that
+ * key to us by setting a modifier bit in the key event, instead of
+ * turning the keystroke into a control character, so we implement the
+ * two clipboard shortcuts here - before the code below passes all
+ * other Command-key combinations back to GTK to do with as it likes.
+ */
+static bool handle_command_key(GtkFrontend *inst, GdkEventKey *event)
+{
+    /*
+     * Different GDK back ends have used different modifier bits for
+     * the system key, so we accept any of the ones that might mean it.
+     * Meta is deliberately not in this list, because that's the key
+     * whose effect is passed through to the terminal.
+     */
+    static const int command_mod_masks[] = {
+        GDK_MOD2_MASK, GDK_SUPER_MASK, GDK_HYPER_MASK,
+    };
+    bool command_held = false;
+    size_t i;
+
+    if (event->type != GDK_KEY_PRESS)
+        return false;
+
+    if (conf_get_bool(inst->conf, CONF_osx_command_meta))
+        return false;   /* the user has asked for Command to behave as Meta */
+
+    for (i = 0; i < lenof(command_mod_masks); i++)
+        if (event->state & command_mod_masks[i])
+            command_held = true;
+    if (!command_held)
+        return false;
+
+    /* Ctrl-Command combinations are not ours to interpret. */
+    if (event->state & GDK_CONTROL_MASK)
+        return false;
+
+    switch (event->keyval) {
+      case GDK_KEY_c:
+      case GDK_KEY_C:
+        inst->input_event_time = event->time;
+        {
+            static const int clips[] = { CLIP_CLIPBOARD };
+            term_request_copy(inst->term, clips, lenof(clips));
+        }
+        return true;
+
+      case GDK_KEY_v:
+      case GDK_KEY_V:
+        inst->input_event_time = event->time;
+        term_request_paste(inst->term, CLIP_CLIPBOARD);
+        return true;
+    }
+
+    return false;
+}
+#endif /* OSX_META_KEY_CONFIG */
+
 gint key_event(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
     GtkFrontend *inst = (GtkFrontend *)data;
@@ -1055,6 +1115,8 @@ gint key_event(GtkWidget *widget, GdkEventKey *event, gpointer data)
     noise_ultralight(NOISE_SOURCE_KEY, event->keyval);
 
 #ifdef OSX_META_KEY_CONFIG
+    if (handle_command_key(inst, event))
+        return true;
     if (event->state & inst->system_mod_mask)
         return false;                  /* let GTK process OS X Command key */
 #endif
@@ -2977,7 +3039,8 @@ static void clipboard_text_received(GtkClipboard *clipboard,
     if (!text)
         return;
 
-    paste = dup_mb_to_wc(CS_UTF8, text, length, &paste_len);
+    paste_len = strlen(text);
+    paste = dup_mb_to_wc_c(CS_UTF8, text, paste_len, &paste_len);
 
     term_do_paste(inst->term, paste, paste_len);
 
@@ -5636,7 +5699,9 @@ void new_session_window(Conf *conf, const char *geometry_string)
 
 #define MKMENUITEM(title, func) do                                      \
         {                                                               \
-            menuitem = gtk_menu_item_new_with_label(title);             \
+            char *label_ = l10n_menu_label(title);                      \
+            menuitem = gtk_menu_item_new_with_label(label_);            \
+            sfree(label_);                                              \
             gtk_container_add(GTK_CONTAINER(inst->menu), menuitem);     \
             gtk_widget_show(menuitem);                                  \
             g_signal_connect(G_OBJECT(menuitem), "activate",            \
@@ -5645,7 +5710,9 @@ void new_session_window(Conf *conf, const char *geometry_string)
 
 #define MKSUBMENU(title) do                                             \
         {                                                               \
-            menuitem = gtk_menu_item_new_with_label(title);             \
+            char *label_ = l10n_menu_label(title);                      \
+            menuitem = gtk_menu_item_new_with_label(label_);            \
+            sfree(label_);                                              \
             gtk_container_add(GTK_CONTAINER(inst->menu), menuitem);     \
             gtk_widget_show(menuitem);                                  \
         } while (0)
@@ -5693,7 +5760,7 @@ void new_session_window(Conf *conf, const char *geometry_string)
                    paste_clipboard_menuitem);
         MKMENUITEM("Copy All", copy_all_menuitem);
         MKSEP();
-        s = dupcat("About ", appname);
+        s = l10n_dupprintf("About %s", appname);
         MKMENUITEM(s, about_menuitem);
         sfree(s);
 #undef MKMENUITEM
