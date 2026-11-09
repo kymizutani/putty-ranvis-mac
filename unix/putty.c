@@ -52,7 +52,12 @@ const struct BackendVtable *select_backend(Conf *conf)
 
 void initial_config_box(Conf *conf, post_dialog_fn_t after, void *afterctx)
 {
-    char *title = dupcat(appname, " Configuration");
+    /*
+     * The "%s Configuration" form (rather than concatenating the
+     * programme name afterwards) is what the language files have a
+     * translation for.
+     */
+    char *title = l10n_dupprintf("%s Configuration", appname);
     create_config_box(title, conf, false, 0, after, afterctx);
     sfree(title);
 }

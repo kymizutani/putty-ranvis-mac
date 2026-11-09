@@ -1844,7 +1844,9 @@ static void filefont_clicked(GtkButton *button, gpointer data)
          * Use the unifontsel code provided in unifont.c.
          */
 
-        unifontsel *fontsel = unifontsel_new("Select a font");
+        char *fontsel_title = l10n_dupstr("Select a font");
+        unifontsel *fontsel = unifontsel_new(fontsel_title);
+        sfree(fontsel_title);
 
         gtk_window_set_modal(fontsel->window, true);
         unifontsel_set_name(fontsel, fontname);
@@ -2162,9 +2164,9 @@ GtkWidget *layout_ctrls(
                                 ctrl->fileselect.just_button);
 
             if (!just_button) {
-                const char *browsebtn =
-                    (ctrl->type == CTRL_FILESELECT ?
-                     "Browse..." : "Change...");
+                char *browsebtn = l10n_dupstr(
+                    ctrl->type == CTRL_FILESELECT ?
+                    "Browse..." : "Change...");
 
                 gint percentages[] = { 75, 25 };
                 w = columns_new(4);
@@ -2197,6 +2199,7 @@ GtkWidget *layout_ctrls(
                 gtk_widget_show(ww);
 
                 uc->button = ww = gtk_button_new_with_label(browsebtn);
+                sfree(browsebtn);
                 columns_add(COLUMNS(w), ww, 1, 1);
                 gtk_widget_show(ww);
 
@@ -3096,7 +3099,7 @@ GtkWidget *create_config_box(const char *title, Conf *conf,
         } else {
             int j = path ? ctrl_path_compare(s->pathname, path) : 0;
             if (j != INT_MAX) {        /* add to treeview, start new panel */
-                char *c;
+                char *c, *label;
 #if GTK_CHECK_VERSION(2,0,0)
                 GtkTreeIter treeiter;
 #else
@@ -3121,6 +3124,14 @@ GtkWidget *create_config_box(const char *title, Conf *conf,
                     c = s->pathname;
                 else
                     c++;
+
+                /*
+                 * The label shown in the tree view is translated, but
+                 * the path used internally to identify the panel is
+                 * not; that's the same arrangement the Windows front
+                 * end uses.
+                 */
+                label = l10n_dupstr(c);
 
                 path = s->pathname;
 
@@ -3163,7 +3174,7 @@ GtkWidget *create_config_box(const char *title, Conf *conf,
                 else
                     gtk_tree_store_append(treestore, &treeiter, NULL);
                 gtk_tree_store_set(treestore, &treeiter,
-                                   TREESTORE_PATH, c,
+                                   TREESTORE_PATH, label,
                                    TREESTORE_PARAMS, nselparams,
                                    -1);
                 treeiterlevels[j] = treeiter;
@@ -3184,7 +3195,7 @@ GtkWidget *create_config_box(const char *title, Conf *conf,
                     sp->treepath = NULL;
                 }
 #else
-                treeitem = gtk_tree_item_new_with_label(c);
+                treeitem = gtk_tree_item_new_with_label(label);
                 if (j > 0) {
                     if (!treelevels[j-1]) {
                         treelevels[j-1] = GTK_TREE(gtk_tree_new());
@@ -3213,6 +3224,8 @@ GtkWidget *create_config_box(const char *title, Conf *conf,
                     gtk_tree_select_child(GTK_TREE(tree), treeitem);
                 sp->treeitem = treeitem;
 #endif
+
+                sfree(label);
 
                 level = j+1;
                 nselparams++;
