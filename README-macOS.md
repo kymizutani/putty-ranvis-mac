@@ -63,7 +63,7 @@ X11 専用の `puttytel` は macOS ではビルドされません。
 | branch `ranvis2` | Windows 版フォーク側の流れ。port の commit は載せず、そのまま mirror にしておきます |
 | branch `macos-port` | macOS への port。`ranvis-0.85` を base に、意味ごとに 12 commit |
 | tag `ranvis-0.85` | 受け取ったソース package と**1 バイト違わず一致する**地点（port の base） |
-| tag `macos-<版番>` | port の release。Windows 版側の tag は `ranvis-<ver>` 方式なので、`macos-` を付けて混線させません |
+| tag `macos-<版番号>` | port の release。Windows 版側の tag は `ranvis-<ver>` 方式なので、`macos-` を付けて取り違えません |
 
 ```sh
 git clone https://github.com/kymizutani/putty-ranvis-mac.git
@@ -148,11 +148,11 @@ Windows 版が使っている `windows/lang/0411/*.lng` を、そのまま（変
 - **設定画面の「変更...」「参照...」ボタンと「フォントの選択」**は、共通の窓部品ではなくこの
   フロントエンドのコードに直接書き込まれていたため、辞書を通っていませんでした。`unix/dialog.c` で
   引くようにしました。
-- **各ページの説明文**（「PuTTY のウィンドウの設定」之类）は、プログラム名を埋めた後の文面で辞書を
+- **各ページの説明文**（「PuTTY のウィンドウの設定」など）は、プログラム名を埋めた後の文面で辞書を
   引いていたため、キーが見つかりませんでした。`config.c` で `l10n_dupprintf()`（書式を先に翻訳してから
   値を埋める）を使うようにしました。
 - **キーそのものが無かった文面**は、`windows/lang/0411/putty.lng` に 15 件追加しました。フォントの
-  設定ページの項目（全角テキスト用のフォント、ボールド用のフォント、影付きボールド之类——このフォークが
+  設定ページの項目（全角テキスト用のフォント、ボールド用のフォント、影付きボールドなど——このフォークが
   足した機能で、Windows 版の日本語版でも英語のままです）、ターミナルのリセット、クリップボードの二項目、
   「フォントの選択」の見出しなどです。
 
@@ -176,7 +176,7 @@ PUTTY_PROGNAME=putty PUTTY_LANGDIR="$PWD/windows/lang" build/cfgdump > /tmp/dump
 ```
 
 残っている英語は、保存したセッション名や「ANSI Red」のような色名、鍵交換のアルゴリズム名、制御文字の
-一覧之类、もともと翻訳されていない（翻訳すべきでない）ものが中心です。
+一覧など、もともと翻訳されていない（翻訳すべきでない）ものが中心です。
 
 ## コピー＆ペースト（⌘C / ⌘V）
 
@@ -231,12 +231,12 @@ upstream の PuTTY では、鍵生成の窓口は Windows 版の PuTTYgen だけ
 ## バージョンの表示について
 
 About の窓（アプリメニュー → About）と `putty --version` には、`version.h` の `TEXTVER` がそのまま
-出ます。`0.85-002` のように、ハイフンの後ろの三桁がこのポートのビルド番号で、配布する
-`.dmg` / `.zip` の名前の末尾に付ける数字と同じものです（`putty-ranvis-0.85-macos-arm64-002.dmg` は
-0.85-002 を固めたもの、という意味です）。`.app` が Finder で名乗るバージョン（「情報を見る」に出る
+出ます。`0.85-003` のように、ハイフンの後ろの三桁がこのポートのビルド番号で、配布する
+`.dmg` / `.zip` の名前の末尾に付ける数字と同じものです（`putty-ranvis-0.85-macos-arm64-003.dmg` は
+0.85-003 をそのまままとめた物、という意味です）。`.app` が Finder で名乗るバージョン（「情報を見る」に出る
 やつ）も、同じ文字列を `version.h` から読み取って入れます。配布ファイルの名前も同じ文字列から
 組み立てます（`.app` と同じく、スクリプトが `version.h` を読みに行きます）。SSH の接続時に名乗る文字列は `SSHVER` で、
-`SSH-2.0-PuTTY-ranvis-0.85-002` のようになります。
+`SSH-2.0-PuTTY-ranvis-0.85-003` のようになります。
 
 「Source commit:」という欄は、upstream の自動化されたビルドが **git のチェックアウトから**作ったときに、
 そのコミット ID を自動で書き込むためのものです（後でこの実行ファイルがどのソースから作られたものか
@@ -320,8 +320,8 @@ Finder から起動したプログラムには環境変数がまったく渡さ�
 sh unix/macos-make-src-zip.sh
 ```
 
-名前は `version.h` の版番から組み立てます（`0.85-003` なら
-`build/macos/putty-ranvis-0.85-macos-port-src-003.zip`）。About に出る版番、`.app` のバージョン、
+名前は `version.h` の版番号から組み立てます（`0.85-003` なら
+`build/macos/putty-ranvis-0.85-macos-port-src-003.zip`）。About に出る版番号、`.app` のバージョン、
 tag、配布物名が全部同じ文字列から来るので、どれが新しく作ったものか名前で見分けられます。
 git の中から作るときは**コミット済みの内容**から作ります（`git archive` 経由。未コミットの変更や
 `build/` は入りません。`--commit <ref>` で任意の地点から作れます。git でない場所——Zip を展開した
@@ -342,8 +342,8 @@ git の中から作るときは**コミット済みの内容**から作ります
 sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 ```
 
-名前はこのソースの版番とアーキテクチャから組み立てられ、`version.h` を読みに行きます
-（`0.85-003` → `build/macos/putty-ranvis-0.85-macos-arm64-003.dmg`）。版番を `--seq` で上書きも
+名前はこのソースの版番号とアーキテクチャから組み立てられ、`version.h` を読みに行きます
+（`0.85-003` → `build/macos/putty-ranvis-0.85-macos-arm64-003.dmg`）。版番号を `--seq` で上書きも
 できますし、`--dry-run` は名前を表示するだけで作りません。古い物を消すことはしません。
 
 出来たイメージ（三つで 32MB くらい）の中に、`PuTTY.app` /
@@ -360,7 +360,7 @@ sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 | ファイル | 内容 |
 | --- | --- |
 | `cmake/platforms/unix.cmake` | macOS（Darwin）で `OSX_GTK` を定義。これにより `NOT_X_WINDOWS`（Xlib 不要）、`SET_NONBLOCK_VIA_OPENPT`、`OSX_META_KEY_CONFIG`（メタキー設定）、`JUST_USE_GTK_CLIPBOARD_UTF8`（システム クリップボード利用）が有効になります。`PUTTY_DATADIR` の定義、`libiconv` の自動検出（macOS では `-liconv` が必要）も追加。 |
-| `unix/uxl10n.c` | 空だった Unix 版の言語サポートを実装。`.lng` の読み込み（UTF-16LE→UTF-8、`%XX` エスケープの復元、INI 形式のセクション、ハッシュテーブル）、ロケールからの言語選択、`CanonicalName` 参照、`get_l10n_setting()`（`_LINECODEPAGE_` など）まで、Windows 版 `winl10n.c` と同じ公開 API を提供。Finder 起動用に、環境変数が無い場合は macOS のユーザー設定（`AppleLanguages` / `AppleLocale`、アプリ単位の設定も）から言語を決めます。言語ファイルの名前はプログラム名から決めるので、`puttyapp` のような名前で呼ばれている場合や `puttygen-gtk` のように接尾辞が付いている場合は、元のプログラム名の言語ファイルも探しに行きます。追加として、Windows が接頭字の印しに使う `&` を取り除いたキーでも引けるようにし（表示時に「(&C)」も取り除く）、`l10n_menu_label()` でメニュー文言の対応（`Copy All` → `C&opy All to Clipboard` 之类）も引けるようにしました。テスト用のプログラム（`tools/l10ntest.c` や `cfgdump`）は自分の名前に合った言語ファイルを持てないので、`PUTTY_PROGNAME` で「どのプログラムのふりをするか」を教えるようにしました。 |
+| `unix/uxl10n.c` | 空だった Unix 版の言語サポートを実装。`.lng` の読み込み（UTF-16LE→UTF-8、`%XX` エスケープの復元、INI 形式のセクション、ハッシュテーブル）、ロケールからの言語選択、`CanonicalName` 参照、`get_l10n_setting()`（`_LINECODEPAGE_` など）まで、Windows 版 `winl10n.c` と同じ公開 API を提供。Finder 起動用に、環境変数が無い場合は macOS のユーザー設定（`AppleLanguages` / `AppleLocale`、アプリ単位の設定も）から言語を決めます。言語ファイルの名前はプログラム名から決めるので、`puttyapp` のような名前で呼ばれている場合や `puttygen-gtk` のように接尾辞が付いている場合は、元のプログラム名の言語ファイルも探しに行きます。追加として、Windows が接頭字の印しに使う `&` を取り除いたキーでも引けるようにし（表示時に「(&C)」も取り除く）、`l10n_menu_label()` でメニュー文言の対応（`Copy All` → `C&opy All to Clipboard` など）も引けるようにしました。テスト用のプログラム（`tools/l10ntest.c` や `cfgdump`）は自分の名前に合った言語ファイルを持てないので、`PUTTY_PROGNAME` で「どのプログラムのふりをするか」を教えるようにしました。 |
 | `unix/cfgdump.c` | （新規・既定では作りません）本物の設定ウィンドウを組み立てて、ツリー・タブ・項目や端末メニューに載る文字列を標準出力に出す確認用プログラム。`-DWITH_CONFIG_DUMP=ON` で作れます。翻訳の抜けを画面を見ずに数えるためのものです。 |
 | `tools/l10ntest.c` | （新規・既定では作りません）文字列を言語ファイルに通すとどう出るかを表示する小さな検査プログラム。`-DWITH_L10NTEST=ON` |
 | `tools/lang-coverage.py` | （新規）言語ファイルの全項目を、Unix 側のソースに含まれるもの／Windows 専用のものに分類して数えます。翻訳漏れのキーを探すためのもの。 |
@@ -370,13 +370,13 @@ sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 | `unix/utils/macos_bundle_env.c` | （新規）`.app` の中で起動したときに、実行ファイルの実際の位置から同梱データ（gdk-pixbuf のローダキャッシュ、GSettings のスキーマ、fontconfig の設定）の場所を組み立てて環境変数に設定する。場所を移しても、ターミナルから起動しても動くようにするためのもので、`putty` / `pterm` / `puttyapp` / `ptermapp` / `puttygen-gtk` の起動処理から呼ばれます。 |
 | `unix/macos-make-dmg.sh` | （新規）三つの `.app` をまとめて配れる `.dmg` にするスクリプト。`/Applications` へのリンクとこの説明も入れます。入れる前に各アプリの署名を確認し、出来たイメージの検証とマウントまで行います。名前の末尾に 001, 002, … と連番を付けます（`--seq` で指定、`--dry-run` で名前だけ表示）。 |
 | `unix/macos-make-src-zip.sh` | （新規）改造済みソースを Zip にまとめるスクリプト。git の中ならコミット済みの中身だけを集めます。作った後に `unzip -t` で検証します。名前と番号は `version.h` から。 |
-| `unix/release-name.sh` | （新規）`version.h` の版番から、配布物の名前（base・連番・展開後のトップ_DIR 名）を組み立てる補助スクリプト。About の版番とファイル名が離れないようにするためのもの。 |
-| `unix/next-sequence-number.sh` | （新規）同じ名前のファイルが並んでいるときに次の番号を探す補助スクリプト。版番が付いていないソース（upstream 之类）から作る場合の決め方として使います。 |
-| `version.h` | 既定だった「Unidentified build」を、このポートの版番（`0.85-002`）に差し替え。About の窓・`--version`・SSH の名乗り（`SSHVER`）・`.app` が名乗るバージョンは、すべてここから取ります。末尾の三桁が端口のビルド番号で、配布ファイル名の末尾の数字と同じです。 |
-| `CMakeLists.txt`, `cmake/setup.cmake`, `cmake/gitcommit.cmake` | git のチェックアウトではない場所からビルドしたときに、About の「Source commit:」へ何から作った品なのか書けるようにしました（既定はこの端口のソース-package である旨。git がある場所なら今までどおりコミット ID が出ます。`-DPORT_SOURCE_PROVENANCE=` で差し替え）。 |
+| `unix/release-name.sh` | （新規）`version.h` の版番号から、配布物の名前（base・連番・展開後のトップ_DIR 名）を組み立てる補助スクリプト。About の版番号とファイル名が離れないようにするためのもの。 |
+| `unix/next-sequence-number.sh` | （新規）同じ名前のファイルが並んでいるときに次の番号を探す補助スクリプト。版番号が付いていないソース（upstream など）から作る場合の決め方として使います。 |
+| `version.h` | 既定だった「Unidentified build」を、このポートの版番号（`0.85-003`）に差し替え。About の窓・`--version`・SSH の名乗り（`SSHVER`）・`.app` が名乗るバージョンは、すべてここから取ります。末尾の三桁がportのビルド番号で、配布ファイル名の末尾の数字と同じです。 |
+| `CMakeLists.txt`, `cmake/setup.cmake`, `cmake/gitcommit.cmake` | git のチェックアウトではない場所からビルドしたときに、About の「Source commit:」へ何がソースなのか書けるようにしました（既定は、この port のソース package から作ったという旨。git がある場所なら今までどおりコミット ID が出ます。`-DPORT_SOURCE_PROVENANCE=` で差し替え）。 |
 | `unix/make-macos-bundle.sh` | （新規）`.app` バンドルを組み立てるスクリプト。実行ファイル、Info.plist、`windows/*.ico` からの `.icns`、`Contents/Resources/lang` の言語ファイル、ad-hoc のコードサインまで行います。 |
 | `unix/gtkgen.c` | （新規）窓版の PuTTYgen。鍵の生成・読み込み・保存・形式変換・指紋表示。`windows/puttygen.c` と同じ英語文言を使うので、既存の `puttygen.lng` で日本語になります。 |
-| `unix/CMakeLists.txt` | `uxl10n.c` を全 Unix バイナリがリンクする `utils` ライブラリに追加。言語ファイルを `share/putty/lang/` にインストール。`iso2022` を必要とするターゲットのリンクを修正。`test_lineedit` から重複になるスタブを外す（Apple のリンカは厳密）。Darwin では CoreFoundation をリンクし、`PuTTY.app` / `PTerm.app` / `PuTTYgen.app` を作るターゲットを追加（ターミナル系は `puttyapp` / `ptermapp`、PuTTYgen は `puttygen-gtk` を使用）。Pageant はウィンドウを持たないのでバンドルしていません。`.app` が名乗るバージョンは `version.h` の `TEXTVER` を読み取るようにしました（二か所に版番を書かないようにするため）。 |
+| `unix/CMakeLists.txt` | `uxl10n.c` を全 Unix バイナリがリンクする `utils` ライブラリに追加。言語ファイルを `share/putty/lang/` にインストール。`iso2022` を必要とするターゲットのリンクを修正。`test_lineedit` から重複になるスタブを外す（Apple のリンカは厳密）。Darwin では CoreFoundation をリンクし、`PuTTY.app` / `PTerm.app` / `PuTTYgen.app` を作るターゲットを追加（ターミナル系は `puttyapp` / `ptermapp`、PuTTYgen は `puttygen-gtk` を使用）。Pageant はウィンドウを持たないのでバンドルしていません。`.app` が名乗るバージョンは `version.h` の `TEXTVER` を読み取るようにしました（二か所に版番号を書かないようにするため）。 |
 | `unix/window.c` | ⌘C / ⌘V の実装。加えて、`OSX_GTK` を有効にするとコンパイルできなかった既存コード（`clipboard_text_received()` の未定義変数 `length`）を修正。Ctrl+右クリックのメニューは `MKMENUITEM` / `MKSUBMENU` / About 表示を `l10n_menu_label()`・`l10n_dupprintf()` 経由にしました（それまでは一切翻訳されていませんでした）。 |
 | `unix/putty.c` | 設定ウィンドウのタイトルを言語ファイル経由（「PuTTY 設定」）で生成。 |
 | `unix/dialog.c` | 設定ダイアログ左側のカテゴリー一覧（`Session`, `Connection`, …）も言語ファイルで翻訳するように表示ラベルのみを通しました。内部でパネル識別に使うパスは未翻訳のままです（Windows 版と同じ作り）。フォント設定の「変更...」・ファイル選択の「参照...」ボタンと「フォントの選択」ウィンドウ見出しも、このファイルに直接書かれた文面だったので辞書を通すようにしました。 |
@@ -386,7 +386,7 @@ sh unix/macos-make-dmg.sh --build build --volname "PuTTY 0.85"
 | `unix/utils/sleep_ticks.c` | `putty.h` を読み込むよう修正（`Conf` などの型が必要）。 |
 | `putty.h` | `l10n_dupprintf()` と `l10n_get_codepage_orig_name()` の宣言を追加。 |
 | `test/test_conf.c` | `no_dbackspace` を BOOL のままテストしていた箇所を INT に修正。プラットフォームに関係なく `test_conf` がアサートで落ちていた問題です。 |
-| `windows/lang/0411/putty.lng` | macOS 固有の 3 項目に加え、フォント設定ページの項目（全角用・ボールド用のフォント、影付きボールド）や「ターミナルをリセット」「クリップボードにコピー」之类 15 項目を追加。いずれもこのフォークが Windows 版で翻訳し忘れていた文面です。 |
+| `windows/lang/0411/putty.lng` | macOS 固有の 3 項目に加え、フォント設定ページの項目（全角用・ボールド用のフォント、影付きボールド）や「ターミナルをリセット」「クリップボードにコピー」など 15 項目を追加。いずれもこのフォークが Windows 版で翻訳し忘れていた文面です。 |
 
 ## テスト
 
