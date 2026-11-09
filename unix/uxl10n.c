@@ -785,14 +785,25 @@ static void l10n_init(void)
      * The GUI binaries are sometimes named "puttyapp" or "ptermapp",
      * and the window-based key generator is "puttygen-gtk", but the
      * language files are named after the program as its users know it.
+     *
+     * A test program - tools/l10ntest.c, or cfgdump - has a name that
+     * no user knows, and isn't a variant of anything either. For those,
+     * PUTTY_PROGNAME says which language file to read.
      */
-    prog_names[nprog++] = prog_name;
     {
-        size_t plen = strlen(prog_name);
-        if (plen > 3 && !strcmp(prog_name + plen - 3, "app"))
-            prog_names[nprog++] = lng_dupsubstr(prog_name, plen - 3);
-        else if (plen > 4 && !strcmp(prog_name + plen - 4, "-gtk"))
-            prog_names[nprog++] = lng_dupsubstr(prog_name, plen - 4);
+        const char *want = getenv("PUTTY_PROGNAME");
+
+        if (want && *want) {
+            prog_names[nprog++] = dupstr(want);
+            sfree(prog_name);
+        } else {
+            size_t plen = strlen(prog_name);
+            prog_names[nprog++] = prog_name;
+            if (plen > 3 && !strcmp(prog_name + plen - 3, "app"))
+                prog_names[nprog++] = lng_dupsubstr(prog_name, plen - 3);
+            else if (plen > 4 && !strcmp(prog_name + plen - 4, "-gtk"))
+                prog_names[nprog++] = lng_dupsubstr(prog_name, plen - 4);
+        }
     }
 
     /*
