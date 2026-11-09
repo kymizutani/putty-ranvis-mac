@@ -2870,7 +2870,23 @@ const char *l10n_translate_s(const char *str, char *buf, size_t len);
 #define l10n_translate(str, buf)  l10n_translate_s(str, buf, lenof(buf))
 char *l10n_dupstr(const char *);
 char *l10n_dupvprintf(const char *format, va_list ap);
+char *l10n_dupprintf(const char *format, ...);
+/*
+ * Look up a menu label, dealing with the fact that the language files
+ * were written for the Windows front end: their labels carry '&'
+ * mnemonic markers, and a few of them are worded differently. The
+ * result has the markers taken out, and is ours to free.
+ */
+char *l10n_menu_label(const char *str);
+/*
+ * Point the environment at the data files that were embedded in a
+ * macOS .app bundle, based on where the executable actually is. Does
+ * nothing on other platforms, or if we aren't in a bundle. Call this
+ * before any GUI toolkit has been initialised.
+ */
+void setup_macos_bundle_environment(void);
 int get_l10n_setting(const char* keyname, char* buf, int size);
+const char *l10n_get_codepage_orig_name(const char *cp_name);
 
 void sleep_ticks(int ticks);
 

@@ -48,6 +48,11 @@ const char *l10n_translate_s(const char *str, char *buf, size_t len)
     return str;
 }
 
+char *l10n_menu_label(const char *str)
+{
+    return dupstr(str);
+}
+
 char *l10n_dupstr (char *s) {
   return dupstr(s);
 }
