@@ -14,10 +14,12 @@
 # program works out where its data files are from where it is being
 # run, so mounting the image somewhere new is fine.
 #
-# The file's name gets a number on the end - -001, -002, and so on - so
-# that you can tell which one is the latest without opening it, and so
-# that making a new one never throws away an old one. --dry-run prints
-# the name that would be used and stops there.
+# The file is named after the version this source says it is - see
+# release-name.sh, which reads it out of version.h - so that the name,
+# the About box, the .app bundles and the tag all say the same thing,
+# and making a new one never throws away an old one. --base and --seq
+# override that; --dry-run prints the name that would be used and stops
+# there.
 
 set -e
 
@@ -55,17 +57,19 @@ if [ ! -d "$macosdir" ]; then
     exit 1
 fi
 
+srctree="$(cd "$(dirname "$0")/.." && pwd)"
 if [ -z "$out" ]; then
+    naming=$(/bin/sh "$(dirname "$0")/release-name.sh" \
+                 --tree "$srctree" --ext dmg --dir "$macosdir")
     if [ -z "$base" ]; then
-        # The source tree has a name like putty-ranvis-0.85, which is
-        # the version information we want in the file name; the rest
-        # says what it was built for.
-        srctree="$(cd "$(dirname "$0")/.." && pwd)"
-        base="$(basename "$srctree")-macos-$(uname -m)"
+        base=$(printf '%s\n' "$naming" | cut -f1)
     fi
     if [ -z "$seq" ]; then
-        seq=$(/bin/sh "$(dirname "$0")/next-sequence-number.sh" \
-                  --dir "$macosdir" --base "$base" --ext dmg)
+        seq=$(printf '%s\n' "$naming" | cut -f2)
+    fi
+    if [ -z "$seq" ]; then
+        echo "macos-make-dmg.sh: can't work out a build number; use --seq" >&2
+        exit 1
     fi
     out="$macosdir/$base-$seq.dmg"
 fi
